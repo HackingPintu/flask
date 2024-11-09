@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+<head>
+    <title>Create New Repository</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Create New Repository</h1>
+        <form method="POST" action="{{ url_for('new_repo') }}" enctype="multipart/form-data">
+            <label for="name">Repository Name:</label>
+            <input type="text" id="name" name="name" required>
+            <label for="description">Description:</label>
+            <input type="text" id="description" name="description" required>
+            <label for="file">Upload File:</label>
+            <input type="file" id="file" name="file" required>
+            <button type="submit">Create Repository</button>
+        </form>
+        <a href="{{ url_for('index') }}">Back to Home</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+    <title>Repositories</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Repositories</h1>
+        <a href="{{ url_for('new_repo') }}"><button>Create New Repository</button></a>
+        <ul>
+            {% for repo in repos %}
+                <li>
+                    <a href="{{ url_for('repo_detail', repo_id=repo.id) }}">{{ repo.name }}</a> -
+                    <a href="{{ url_for('delete_repo', repo_id=repo.id) }}">Delete</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>

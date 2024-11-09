@@ -1,0 +1,118 @@
+<!doctype html>
+<html>
+<head>
+    <title>{{ repo.name }}</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.1.0/jszip-utils.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>{{ repo.name }}</h1>
+        <h2>Description:</h2>
+        <p>{{ repo.description }}</p>
+        <button onclick="fetchAndUnzipFile('{{ repo.filename }}')">Unzip and View Files</button>
+        <div id="fileList"></div>
+        <div id="languageStats"></div>
+        <h2>Change History:</h2>
+        <ul id="changeHistory">
+            <!-- Change history will be dynamically inserted here -->
+        </ul>
+        <a href="{{ url_for('index') }}" style="color: blue;">Back to Home</a>
+        <div id="errorMessage"></div>
+    </div>
+
+    <script>
+        const repoId = {{ repo.id | tojson }};
+
+        document.addEventListener("DOMContentLoaded", () => {
+            displayChangeHistory();
+        });
+
+        function fetchAndUnzipFile(filename) {
+            fetch(`/uploads/${filename}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        JSZip.loadAsync(e.target.result).then(function(zip) {
+                            document.getElementById('fileList').innerHTML = '';
+                            const languageStats = {};
+                            let totalSize = 0;
+
+                            zip.forEach(function(relativePath, zipEntry) {
+                                if (!zipEntry.dir) {
+                                    const ext = relativePath.split('.').pop();
+                                    zipEntry.async("string").then(function(content) {
+                                        const fileDiv = document.createElement('div');
+                                        fileDiv.innerHTML = `
+                                            <h3>${zipEntry.name}</h3>
+                                            <textarea>${content}</textarea>
+                                            <button onclick="saveChanges('${zipEntry.name}', this)">Save</button>
+                                        `;
+                                        document.getElementById('fileList').appendChild(fileDiv);
+
+                                        const size = zipEntry._data.uncompressedSize;
+                                        totalSize += size;
+                                        if (languageStats[ext]) {
+                                            languageStats[ext] += size;
+                                        } else {
+                                            languageStats[ext] = size;
+                                        }
+
+                                        displayLanguageStats(languageStats, totalSize);
+                                    });
+                                }
+                            });
+                        }).catch(function(err) {
+                            document.getElementById('errorMessage').innerText = 'Error unzipping file: ' + err.message;
+                        });
+                    };
+                    reader.readAsArrayBuffer(blob);
+                })
+                .catch(err => {
+                    document.getElementById('errorMessage').innerText = 'Error fetching file: ' + err.message;
+                });
+        }
+
+        function displayLanguageStats(languageStats, totalSize) {
+            const languageStatsDiv = document.getElementById('languageStats');
+            languageStatsDiv.innerHTML = '<h2>Language Statistics:</h2>';
+            const statsList = document.createElement('ul');
+            for (const [ext, size] of Object.entries(languageStats)) {
+                const percentage = ((size / totalSize) * 100).toFixed(2);
+                const listItem = document.createElement('li');
+                listItem.textContent = `${ext.toUpperCase()}: ${percentage}%`;
+                statsList.appendChild(listItem);
+            }
+            languageStatsDiv.appendChild(statsList);
+        }
+
+        function saveChanges(filename, button) {
+            const textarea = button.previousElementSibling;
+            const content = textarea.value;
+            const timestamp = new Date().toLocaleString();
+            const change = `${timestamp} - Edited file: ${filename}`;
+
+            // Save change to sessionStorage
+            let changeHistory = JSON.parse(sessionStorage.getItem(`changeHistory_${repoId}`)) || [];
+            changeHistory.push(change);
+            sessionStorage.setItem(`changeHistory_${repoId}`, JSON.stringify(changeHistory));
+
+            // Update the displayed change history
+            displayChangeHistory();
+        }
+
+        function displayChangeHistory() {
+            const changeHistory = JSON.parse(sessionStorage.getItem(`changeHistory_${repoId}`)) || [];
+            const changeHistoryDiv = document.getElementById('changeHistory');
+            changeHistoryDiv.innerHTML = changeHistory.map(change => `<li>${change}</li>`).join('');
+        }
+    </script>
+</body>
+</html>

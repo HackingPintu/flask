@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+<head>
+    <title>Landing Page</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to GitRepo</h1>
+        <a href="{{ url_for('login') }}"><button>Login</button></a>
+        <a href="{{ url_for('signup') }}"><button>Signup</button></a>
+    </div>
+</body>
+</html>
